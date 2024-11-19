@@ -3,7 +3,7 @@ namespace Dadrass.Dev.Expression.Core.Token;
 /// <summary>
 /// Defines token types for arithmetic operators.
 /// </summary>
-public enum TokenType {
+enum TokenType {
     /// <summary>Represents the "+" operator.</summary>
     Plus,
 

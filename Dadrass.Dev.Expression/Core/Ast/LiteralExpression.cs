@@ -3,7 +3,7 @@ namespace Dadrass.Dev.Expression.Core.Ast;
 /// <summary>
 /// Represents a literal value in the AST (e.g., "42", "true").
 /// </summary>
-public class LiteralExpression : AstNode {
+class LiteralExpression : AstNode {
 
     /// <summary>
     /// The literal value of this node.

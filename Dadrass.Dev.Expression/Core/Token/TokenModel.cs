@@ -3,7 +3,7 @@ namespace Dadrass.Dev.Expression.Core.Token;
 /// <summary>
 /// Represents a token in the parsed expression.
 /// </summary>
-public class TokenModel {
+class TokenModel {
     /// <summary>
     /// Gets or sets the arithmetic operator type of the token.
     /// </summary>
@@ -26,7 +26,9 @@ public class TokenModel {
     {
         Literal = literal;
         if (literal != null)
+        {
             Tokens = tokens!;
+        }
 
         TokenType = type;
     }

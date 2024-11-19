@@ -3,8 +3,15 @@ namespace Dadrass.Dev.Expression.Core.Token;
 /// <summary>
 /// Tokenizes the input string into a sequence of tokens.
 /// </summary>
-public class Tokenizer {
+class Tokenizer {
+    /// <summary>
+    /// The input string to be tokenized.
+    /// </summary>
     readonly string _input;
+
+    /// <summary>
+    /// The current index within the input string.
+    /// </summary>
     int _currentIndex;
 
     /// <summary>
@@ -27,9 +34,10 @@ public class Tokenizer {
 
         while (!IsAtEnd())
         {
-            var c = Advance();
+            // Read the next character and determine its token type
+            var currentChar = Advance();
 
-            switch (c)
+            switch (currentChar)
             {
                 case ';':
                     tokens.Add(new TokenModel(TokenType.Semicolon, ";"));
@@ -66,15 +74,23 @@ public class Tokenizer {
                     break;
                 case '&':
                     if (Match('&'))
+                    {
                         tokens.Add(new TokenModel(TokenType.And, "&&"));
+                    }
                     else
-                        throw new Exception("Unexpected character '&'");
+                    {
+                        throw new Exception("Unexpected character '&'.");
+                    }
                     break;
                 case '|':
                     if (Match('|'))
+                    {
                         tokens.Add(new TokenModel(TokenType.Or, "||"));
+                    }
                     else
-                        throw new Exception("Unexpected character '|'");
+                    {
+                        throw new Exception("Unexpected character '|'.");
+                    }
                     break;
                 case '\'':
                     tokens.Add(ParseString());
@@ -86,26 +102,33 @@ public class Tokenizer {
                     tokens.Add(ParseCurlyBracedIdentifier());
                     break;
                 case ',':
-                    tokens.Add(new TokenModel(TokenType.Eof, ";"));
                     tokens.Add(new TokenModel(TokenType.Comma, ","));
                     break;
                 case ' ':
                 case '\t':
                 case '\r':
                 case '\n':
+                    // Ignore whitespace
                     break;
                 default:
-                    if (char.IsDigit(c))
+                    if (char.IsDigit(currentChar))
+                    {
                         tokens.Add(ParseDateTimeOrNumber());
-                    else if (char.IsLetter(c))
+                    }
+                    else if (char.IsLetter(currentChar))
+                    {
                         tokens.Add(ParseIdentifier());
+                    }
                     else
-                        throw new Exception($"Unexpected character: {c}");
+                    {
+                        throw new Exception($"Unexpected character: {currentChar}");
+                    }
                     break;
             }
         }
 
-        tokens.Add(new TokenModel(TokenType.Eof, ";"));
+        // Add an EOF token to indicate the end of the input
+        tokens.Add(new TokenModel(TokenType.Eof, null));
         return tokens;
     }
 
@@ -116,43 +139,33 @@ public class Tokenizer {
     TokenModel ParseBracketedIdentifier()
     {
         var start = _currentIndex;
-        while (!IsAtEnd() && Peek() != ']')
-        {
-            Advance();
-        }
-        Advance();// Consume closing ']'
+        while (!IsAtEnd() && Peek() != ']') Advance();
+        Advance();// Consume the closing ']'
         var propertyName = _input[start..(_currentIndex - 1)];
         return new TokenModel(TokenType.Identifier, propertyName);
     }
 
     /// <summary>
-    /// Parses a property enclosed in curly braces (e.g., {DateTime.Now}).
+    /// Parses a property or function enclosed in curly braces (e.g., {DateTime.Now}).
     /// </summary>
-    /// <returns>A token representing the property or method access.</returns>
+    /// <returns>A token representing the property or method call.</returns>
     TokenModel ParseCurlyBracedIdentifier()
     {
         var start = _currentIndex;
-        var opens = 0;
+        var openBracesCount = 0;
+
         while (!IsAtEnd())
         {
-            if (_input[_currentIndex - 1] == '{')
-                opens++;
-            else if (Peek() == '}')
-                opens--;
-            if (opens == 0) break;
+            if (_input[_currentIndex - 1] == '{') openBracesCount++;
+            if (Peek() == '}') openBracesCount--;
+
+            if (openBracesCount == 0) break;
             Advance();
         }
+
         Advance();
-        var propertyName = _input[start..(_currentIndex - 1)];
-        var firstParenthesisIndex = propertyName.IndexOf('(');
-        var lastParenthesisIndex = propertyName.LastIndexOf(')');
-
-        var args = propertyName.Substring(firstParenthesisIndex + 1, lastParenthesisIndex - firstParenthesisIndex - 1);
-        var functionName = propertyName[..^(args.Length + 2)].Trim();
-        var tokenizer = new Tokenizer(args);
-
-        var tokens = tokenizer.Tokenize();
-        return new TokenModel(TokenType.Function, functionName, tokens);
+        var content = _input[start..(_currentIndex - 1)];
+        return new TokenModel(TokenType.Function, content);
     }
 
     /// <summary>
@@ -162,11 +175,8 @@ public class Tokenizer {
     TokenModel ParseString()
     {
         var start = _currentIndex;
-        while (!IsAtEnd() && Peek() != '\'')
-        {
-            Advance();
-        }
-        Advance();// Consume closing '\''
+        while (!IsAtEnd() && Peek() != '\'') Advance();
+        Advance();// Consume the closing '\''
         var value = _input[start..(_currentIndex - 1)];
         return new TokenModel(TokenType.String, value);
     }
@@ -178,39 +188,36 @@ public class Tokenizer {
     TokenModel ParseDateTimeOrNumber()
     {
         var start = _currentIndex - 1;// Include the starting character
-
-        // Parse date-time in format YYYY-MM-DD or YYYY-MM-DD T HH:mm:ss
-        while (!IsAtEnd() && (char.IsDigit(Peek()) || Peek() == '-' || Peek() == 'T' || Peek() == ':' || Peek() == '.'))
-        {
-            Advance();
-        }
-
+        while (!IsAtEnd() && (char.IsDigit(Peek()) || Peek() == '-' || Peek() == 'T' || Peek() == ':' || Peek() == '.')) Advance();
         var text = _input[start.._currentIndex];
 
-        // Try to parse as a date-time
         return DateTime.TryParse(text, out var dateTime)
             ? new TokenModel(TokenType.DateTime, dateTime)
-            :
-            // Fallback to number parsing
-            new TokenModel(TokenType.Number, double.Parse(text));
-
+            : new TokenModel(TokenType.Number, CastStringToNumber(text));
     }
 
     /// <summary>
-    /// Parses an identifier (such as a variable or function name) from the input.
+    /// Attempts to convert a string into a numeric value.
     /// </summary>
-    /// <returns>A token representing the parsed identifier.</returns>
+    /// <param name="input">The string to convert.</param>
+    /// <returns>The parsed numeric value.</returns>
+    static object CastStringToNumber(string input)
+    {
+        if (int.TryParse(input, out var intResult)) return intResult;
+        if (decimal.TryParse(input, out var decimalResult)) return decimalResult;
+        if (double.TryParse(input, out var doubleResult)) return doubleResult;
+        throw new FormatException("Invalid numeric format.");
+    }
+
+    /// <summary>
+    /// Parses an identifier (e.g., variable or function name) from the input.
+    /// </summary>
+    /// <returns>A token representing the identifier.</returns>
     TokenModel ParseIdentifier()
     {
         var start = _currentIndex - 1;
-
-        // Parse until the next non-letter or non-digit character
-        while (!IsAtEnd() && char.IsLetterOrDigit(Peek()))
-            Advance();
-
-        var text = _input[start.._currentIndex];
-
-        return new TokenModel(TokenType.Identifier, text);
+        while (!IsAtEnd() && char.IsLetterOrDigit(Peek())) Advance();
+        return new TokenModel(TokenType.Identifier, _input[start.._currentIndex]);
     }
 
     /// <summary>
@@ -220,10 +227,10 @@ public class Tokenizer {
     char Advance() => _input[_currentIndex++];
 
     /// <summary>
-    /// Matches the current character with the expected character and advances the index if matched.
+    /// Matches the current character with the expected character and advances if matched.
     /// </summary>
-    /// <param name="expected">The character to match.</param>
-    /// <returns>True if the current character matches the expected character, otherwise false.</returns>
+    /// <param name="expected">The expected character to match.</param>
+    /// <returns>True if matched, otherwise false.</returns>
     bool Match(char expected)
     {
         if (IsAtEnd() || _input[_currentIndex] != expected) return false;
@@ -240,6 +247,6 @@ public class Tokenizer {
     /// <summary>
     /// Checks if the end of the input string has been reached.
     /// </summary>
-    /// <returns>True if the end of the input is reached, otherwise false.</returns>
+    /// <returns>True if at the end of the input, otherwise false.</returns>
     bool IsAtEnd() => _currentIndex >= _input.Length;
 }

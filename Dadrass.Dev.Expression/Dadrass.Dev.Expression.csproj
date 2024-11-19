@@ -4,6 +4,28 @@
         <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <PackageId>Dadrass.Dev.Expression</PackageId>
+        <Title>Dadrass.Dev Expression</Title>
+        <Authors>Alireza Dadrass</Authors>
+        <Description>Dadrass Expression is a C# library designed for evaluating dynamic expressions at runtime. The library supports
+            tokenizing, parsing, and evaluating mathematical, logical, and function-based expressions, with the ability to bind
+            values dynamically from a given data source.</Description>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <Copyright>MIT</Copyright>
+        <PackageProjectUrl>https://github.com/Dadrass-Dev/Expression.git</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/Dadrass-Dev/Expression.git</RepositoryUrl>
+        <AssemblyVersion>1.0.0</AssemblyVersion>
+        <FileVersion>1.0.0</FileVersion>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageLicense>https://github.com/Dadrass-Dev/Expression?tab=MIT-1-ov-file</PackageLicense>
+        <Version>1.0.0</Version>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <RepositoryType>Public</RepositoryType>
+        <PackageTags>Dynamic expressions</PackageTags>
+        <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     </PropertyGroup>
-
+    <ItemGroup>
+        <None Include="../README.md" Pack="true" PackagePath=""/>
+        <None Include="../LICENSE" Pack="true" PackagePath=""/>
+    </ItemGroup>
 </Project>

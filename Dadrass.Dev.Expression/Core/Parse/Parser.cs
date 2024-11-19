@@ -7,9 +7,9 @@ using Utilities;
 /// <summary>
 /// Parses a list of tokens into an Abstract Syntax Tree (AST).
 /// </summary>
-public class Parser {
+class Parser {
     readonly List<TokenModel> _tokens;
-    readonly Dictionary<string, object> _parameters;
+    readonly Dictionary<string, object?>? _parameters;
     int _current;
 
     /// <summary>
@@ -17,7 +17,7 @@ public class Parser {
     /// </summary>
     /// <param name="tokens">The list of tokens to parse.</param>
     /// <param name="parameters">The dictionary of parameters to replace.</param>
-    public Parser(List<TokenModel> tokens, Dictionary<string, object> parameters)
+    public Parser(List<TokenModel> tokens, Dictionary<string, object?>? parameters)
     {
         _tokens = tokens;
         _parameters = parameters;
@@ -33,15 +33,16 @@ public class Parser {
     /// <summary>
     /// Parses logical OR expressions.
     /// </summary>
+    /// <returns>The root node of the logical OR expression.</returns>
     protected AstNode ParseLogicalOr()
     {
         var node = ParseLogicalAnd();
 
         while (Match(TokenType.Or))
         {
-            var op = Previous();
-            var right = ParseLogicalAnd();
-            node = new BinaryExpression(node, right, op);
+            var operatorToken = Previous();
+            var rightNode = ParseLogicalAnd();
+            node = new BinaryExpression(node, rightNode, operatorToken);
         }
 
         return node;
@@ -50,15 +51,16 @@ public class Parser {
     /// <summary>
     /// Parses logical AND expressions.
     /// </summary>
+    /// <returns>The root node of the logical AND expression.</returns>
     protected AstNode ParseLogicalAnd()
     {
         var node = ParseEquality();
 
         while (Match(TokenType.And))
         {
-            var op = Previous();
-            var right = ParseEquality();
-            node = new BinaryExpression(node, right, op);
+            var operatorToken = Previous();
+            var rightNode = ParseEquality();
+            node = new BinaryExpression(node, rightNode, operatorToken);
         }
 
         return node;
@@ -67,15 +69,16 @@ public class Parser {
     /// <summary>
     /// Parses equality expressions (e.g., "==" and "!=").
     /// </summary>
+    /// <returns>The root node of the equality expression.</returns>
     protected AstNode ParseEquality()
     {
         var node = ParseComparison();
 
         while (Match(TokenType.EqualEqual, TokenType.NotEqual))
         {
-            var op = Previous();
-            var right = ParseComparison();
-            node = new BinaryExpression(node, right, op);
+            var operatorToken = Previous();
+            var rightNode = ParseComparison();
+            node = new BinaryExpression(node, rightNode, operatorToken);
         }
 
         return node;
@@ -84,15 +87,16 @@ public class Parser {
     /// <summary>
     /// Parses comparison expressions (e.g., "&lt;", "&gt;=", etc.).
     /// </summary>
+    /// <returns>The root node of the comparison expression.</returns>
     protected AstNode ParseComparison()
     {
         var node = ParsePrimary();
 
         while (Match(TokenType.Less, TokenType.LessEqual, TokenType.Greater, TokenType.GreaterEqual))
         {
-            var op = Previous();
-            var right = ParsePrimary();
-            node = new BinaryExpression(node, right, op);
+            var operatorToken = Previous();
+            var rightNode = ParsePrimary();
+            node = new BinaryExpression(node, rightNode, operatorToken);
         }
 
         return node;
@@ -101,6 +105,7 @@ public class Parser {
     /// <summary>
     /// Parses primary expressions, such as literals or identifiers.
     /// </summary>
+    /// <returns>The root node of the primary expression.</returns>
     protected AstNode ParsePrimary()
     {
         if (Match(TokenType.Number, TokenType.String, TokenType.DateTime, TokenType.True, TokenType.False))
@@ -118,26 +123,33 @@ public class Parser {
             return ResolveFunction();
         }
 
-        var expr = ParseExpression();
-        Consume(TokenType.RightParen, "Expect ')' after expression.");
-        return expr;
+        var expression = ParseExpression();
+        Consume(TokenType.RightParen, "Expected ')' after expression.");
+        return expression;
     }
 
-
+    /// <summary>
+    /// Resolves a function expression and its arguments.
+    /// </summary>
+    /// <returns>The root node of the function expression.</returns>
     protected AstNode ResolveFunction()
     {
-        var arguments = SplitListByDelimiter(Previous().Tokens).Select(s => {
-            var parser = new Parser(s, _parameters);
-            return parser.ParseExpression();
-        }).ToArray();
+        var arguments = SplitListByDelimiter(Previous().Tokens)
+            .Select(tokens => {
+                var parser = new Parser(tokens, _parameters);
+                return parser.ParseExpression();
+            })
+            .ToArray();
 
         return new FunctionExpression(Previous().Literal!.ToString()!, arguments, ExpressionUtilities.ResolveFunction);
     }
 
-    protected object? ResolveIdentifier(string identifier)
-    {
-        return _parameters.GetValueOrDefault(identifier);
-    }
+    /// <summary>
+    /// Resolves the value of an identifier.
+    /// </summary>
+    /// <param name="identifier">The identifier name.</param>
+    /// <returns>The resolved value of the identifier, or <see langword="null"/> if not found.</returns>
+    protected object? ResolveIdentifier(string identifier) => _parameters?.GetValueOrDefault(identifier);
 
     /// <summary>
     /// Checks if the current token matches any of the given token types.
@@ -148,7 +160,9 @@ public class Parser {
     protected bool Match(params object[] types)
     {
         if (!types.Any(Check))
+        {
             return false;
+        }
         Advance();
         return true;
     }
@@ -160,7 +174,10 @@ public class Parser {
     /// <returns><see langword="true"/> if the token matches the type; otherwise, <see langword="false"/>.</returns>
     protected bool Check(object type)
     {
-        if (IsAtEnd()) return false;
+        if (IsAtEnd())
+        {
+            return false;
+        }
 
         var currentToken = Peek();
         return type switch
@@ -170,14 +187,15 @@ public class Parser {
         };
     }
 
-
     /// <summary>
     /// Advances to the next token in the list.
     /// </summary>
-    /// <returns>The current token before advancing.</returns>
     protected void Advance()
     {
-        if (!IsAtEnd()) _current++;
+        if (!IsAtEnd())
+        {
+            _current++;
+        }
         Previous();
     }
 
@@ -204,7 +222,6 @@ public class Parser {
     /// </summary>
     /// <param name="type">The expected token type.</param>
     /// <param name="message">The error message if the token does not match.</param>
-    /// <returns>The consumed token.</returns>
     protected void Consume(object type, string message)
     {
         if (!Check(type))
@@ -214,33 +231,36 @@ public class Parser {
         Advance();
     }
 
-
-    static List<List<TokenModel>> SplitListByDelimiter(List<TokenModel> list)
+    /// <summary>
+    /// Splits a list of tokens by a delimiter.
+    /// </summary>
+    /// <param name="tokens">The list of tokens to split.</param>
+    /// <returns>A list of token groups.</returns>
+    static List<List<TokenModel>> SplitListByDelimiter(List<TokenModel> tokens)
     {
         var result = new List<List<TokenModel>>();
-        var current = new List<TokenModel>();
+        var currentGroup = new List<TokenModel>();
 
-        foreach (var item in list)
+        foreach (var token in tokens)
         {
-            if (item.TokenType == TokenType.Comma)
+            if (token.TokenType == TokenType.Comma)
             {
-                if (current.Count <= 0)
+                if (currentGroup.Count <= 0)
                 {
                     continue;
                 }
-                result.Add([..current]);// Add the current group
-                current.Clear();// Start a new group
+                result.Add([..currentGroup]);
+                currentGroup.Clear();
             }
             else
             {
-                current.Add(item);
+                currentGroup.Add(token);
             }
         }
 
-        // Add the last group if it exists
-        if (current.Count > 0)
+        if (currentGroup.Count > 0)
         {
-            result.Add(current);
+            result.Add(currentGroup);
         }
 
         return result;

@@ -32,7 +32,7 @@ public static class ExpressionUtilities {
         },
         {
             "TODAY", _ => DateTime.Today
-        },
+        }
     };
 
     #region Core Functionality
@@ -43,15 +43,14 @@ public static class ExpressionUtilities {
     /// <param name="functionName">The name of the function.</param>
     /// <param name="args">The arguments to pass to the function.</param>
     /// <returns>The result of the function.</returns>
-    /// <exception cref="Exception">Thrown when the function is not found.</exception>
     public static object? ResolveFunction(string functionName, params object?[]? args)
     {
         var functions =
             FunctionRegistry
                 .Concat(CustomFunctionRegistry)
-                .ToDictionary(d =>
+                .ToDictionary(keySelector: d =>
                     d.Key.ToLower(),
-                d => d.Value
+                elementSelector: d => d.Value
                 );
         return !functions.ContainsKey(functionName.ToLower()) ? null : functions[functionName.ToLower()](args);
     }
@@ -64,10 +63,12 @@ public static class ExpressionUtilities {
         ArgumentNullException.ThrowIfNull(args);
 
         if (args.Length != 3)
+        {
             throw new ArgumentException("IIF requires exactly three arguments: condition, true value, false value.");
+        }
         return (Convert.ToBoolean(args[0]) ? args[1] : args[2])!;
     }
-    
+
 
     /// <summary>
     /// Implements the COALESCE function, which returns the first non-null argument.

@@ -3,7 +3,7 @@ namespace Dadrass.Dev.Expression.Core.Ast;
 /// <summary>
 /// Abstract base class representing a node in the Abstract Syntax Tree (AST).
 /// </summary>
-public abstract class AstNode {
+abstract class AstNode {
     /// <summary>
     /// The literal value of this node.
     /// </summary>

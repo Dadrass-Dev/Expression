@@ -3,7 +3,7 @@ namespace Dadrass.Dev.Expression.Core.Ast;
 /// <summary>
 /// Represents an identifier node (e.g., a variable or a function call).
 /// </summary>
-public class IdentifierExpression : AstNode {
+class IdentifierExpression : AstNode {
     /// <summary>
     /// The name of the identifier.
     /// </summary>

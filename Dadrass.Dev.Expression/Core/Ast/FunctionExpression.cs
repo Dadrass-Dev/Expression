@@ -3,7 +3,7 @@ namespace Dadrass.Dev.Expression.Core.Ast;
 /// <summary>
 /// Represents an identifier node (e.g., a variable or a function call).
 /// </summary>
-public class FunctionExpression : AstNode {
+class FunctionExpression : AstNode {
     /// <summary>
     /// The name of the identifier.
     /// </summary>
@@ -20,7 +20,7 @@ public class FunctionExpression : AstNode {
     public Func<string, object?[]?, object?> Resolver { get; }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="IdentifierExpression"/> class.
+    /// Initializes a new instance of the <see cref="FunctionExpression"/> class.
     /// </summary>
     /// <param name="name">The name of the function.</param>
     /// <param name="args">The args of the function.</param>

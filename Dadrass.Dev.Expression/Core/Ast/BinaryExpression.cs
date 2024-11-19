@@ -5,7 +5,7 @@ using Token;
 /// <summary>
 /// Represents a binary expression node (e.g., "a && b" or "x > y").
 /// </summary>
-public class BinaryExpression : AstNode {
+class BinaryExpression : AstNode {
     /// <summary>
     /// The left operand of the binary expression.
     /// </summary>
@@ -20,7 +20,7 @@ public class BinaryExpression : AstNode {
     /// The operator token (e.g., &&, >, +) for the binary expression.
     /// </summary>
     public TokenModel Operator { get; }
-    
+
     /// <summary>
     /// Initializes a new instance of the <see cref="BinaryExpression"/> class.
     /// </summary>
