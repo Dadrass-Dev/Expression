@@ -32,47 +32,47 @@ public class Tokenizer {
             switch (c)
             {
                 case ';':
-                    tokens.Add(new TokenModel(OtherTokenType.Semicolon, ";"));
+                    tokens.Add(new TokenModel(TokenType.Semicolon, ";"));
                     break;
                 case '(':
-                    tokens.Add(new TokenModel(OtherTokenType.LeftParen, "("));
+                    tokens.Add(new TokenModel(TokenType.LeftParen, "("));
                     break;
                 case ')':
-                    tokens.Add(new TokenModel(OtherTokenType.RightParen, ")"));
+                    tokens.Add(new TokenModel(TokenType.RightParen, ")"));
                     break;
                 case '+':
-                    tokens.Add(new TokenModel(ArithmeticTokenType.Plus, "+"));
+                    tokens.Add(new TokenModel(TokenType.Plus, "+"));
                     break;
                 case '-':
-                    tokens.Add(new TokenModel(ArithmeticTokenType.Minus, "-"));
+                    tokens.Add(new TokenModel(TokenType.Minus, "-"));
                     break;
                 case '*':
-                    tokens.Add(new TokenModel(ArithmeticTokenType.Star, "*"));
+                    tokens.Add(new TokenModel(TokenType.Star, "*"));
                     break;
                 case '/':
-                    tokens.Add(new TokenModel(ArithmeticTokenType.Slash, "/"));
+                    tokens.Add(new TokenModel(TokenType.Slash, "/"));
                     break;
                 case '!':
-                    tokens.Add(Match('=') ? new TokenModel(ComparisonTokenType.NotEqual, "!=") : new TokenModel(LogicalTokenType.Bang, "!"));
+                    tokens.Add(Match('=') ? new TokenModel(TokenType.NotEqual, "!=") : new TokenModel(TokenType.Bang, "!"));
                     break;
                 case '=':
-                    tokens.Add(Match('=') ? new TokenModel(ComparisonTokenType.EqualEqual, "==") : new TokenModel(OtherTokenType.Assignment, "="));
+                    tokens.Add(Match('=') ? new TokenModel(TokenType.EqualEqual, "==") : new TokenModel(TokenType.Assignment, "="));
                     break;
                 case '<':
-                    tokens.Add(Match('=') ? new TokenModel(ComparisonTokenType.LessEqual, "<=") : new TokenModel(ComparisonTokenType.Less, "<"));
+                    tokens.Add(Match('=') ? new TokenModel(TokenType.LessEqual, "<=") : new TokenModel(TokenType.Less, "<"));
                     break;
                 case '>':
-                    tokens.Add(Match('=') ? new TokenModel(ComparisonTokenType.GreaterEqual, ">=") : new TokenModel(ComparisonTokenType.Greater, ">"));
+                    tokens.Add(Match('=') ? new TokenModel(TokenType.GreaterEqual, ">=") : new TokenModel(TokenType.Greater, ">"));
                     break;
                 case '&':
                     if (Match('&'))
-                        tokens.Add(new TokenModel(LogicalTokenType.And, "&&"));
+                        tokens.Add(new TokenModel(TokenType.And, "&&"));
                     else
                         throw new Exception("Unexpected character '&'");
                     break;
                 case '|':
                     if (Match('|'))
-                        tokens.Add(new TokenModel(LogicalTokenType.Or, "||"));
+                        tokens.Add(new TokenModel(TokenType.Or, "||"));
                     else
                         throw new Exception("Unexpected character '|'");
                     break;
@@ -84,6 +84,10 @@ public class Tokenizer {
                     break;
                 case '{':
                     tokens.Add(ParseCurlyBracedIdentifier());
+                    break;
+                case ',':
+                    tokens.Add(new TokenModel(TokenType.Eof, ";"));
+                    tokens.Add(new TokenModel(TokenType.Comma, ","));
                     break;
                 case ' ':
                 case '\t':
@@ -101,7 +105,7 @@ public class Tokenizer {
             }
         }
 
-        tokens.Add(new TokenModel(OtherTokenType.Eof, null));// EOF token
+        tokens.Add(new TokenModel(TokenType.Eof, ";"));
         return tokens;
     }
 
@@ -118,7 +122,7 @@ public class Tokenizer {
         }
         Advance();// Consume closing ']'
         var propertyName = _input[start..(_currentIndex - 1)];
-        return new TokenModel(OtherTokenType.Identifier, propertyName);
+        return new TokenModel(TokenType.Identifier, propertyName);
     }
 
     /// <summary>
@@ -128,13 +132,27 @@ public class Tokenizer {
     TokenModel ParseCurlyBracedIdentifier()
     {
         var start = _currentIndex;
-        while (!IsAtEnd() && Peek() != '}')
+        var opens = 0;
+        while (!IsAtEnd())
         {
+            if (_input[_currentIndex - 1] == '{')
+                opens++;
+            else if (Peek() == '}')
+                opens--;
+            if (opens == 0) break;
             Advance();
         }
         Advance();
         var propertyName = _input[start..(_currentIndex - 1)];
-        return new TokenModel(OtherTokenType.Identifier, propertyName);
+        var firstParenthesisIndex = propertyName.IndexOf('(');
+        var lastParenthesisIndex = propertyName.LastIndexOf(')');
+
+        var args = propertyName.Substring(firstParenthesisIndex + 1, lastParenthesisIndex - firstParenthesisIndex - 1);
+        var functionName = propertyName[..^(args.Length + 2)].Trim();
+        var tokenizer = new Tokenizer(args);
+
+        var tokens = tokenizer.Tokenize();
+        return new TokenModel(TokenType.Function, functionName, tokens);
     }
 
     /// <summary>
@@ -150,7 +168,7 @@ public class Tokenizer {
         }
         Advance();// Consume closing '\''
         var value = _input[start..(_currentIndex - 1)];
-        return new TokenModel(LiteralTokenType.String, value);
+        return new TokenModel(TokenType.String, value);
     }
 
     /// <summary>
@@ -171,10 +189,10 @@ public class Tokenizer {
 
         // Try to parse as a date-time
         return DateTime.TryParse(text, out var dateTime)
-            ? new TokenModel(LiteralTokenType.DateTime, dateTime)
+            ? new TokenModel(TokenType.DateTime, dateTime)
             :
             // Fallback to number parsing
-            new TokenModel(LiteralTokenType.Number, double.Parse(text));
+            new TokenModel(TokenType.Number, double.Parse(text));
 
     }
 
@@ -192,7 +210,7 @@ public class Tokenizer {
 
         var text = _input[start.._currentIndex];
 
-        return new TokenModel(OtherTokenType.Identifier, text);
+        return new TokenModel(TokenType.Identifier, text);
     }
 
     /// <summary>

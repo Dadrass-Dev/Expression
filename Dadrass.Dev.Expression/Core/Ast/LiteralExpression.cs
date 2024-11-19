@@ -4,10 +4,12 @@ namespace Dadrass.Dev.Expression.Core.Ast;
 /// Represents a literal value in the AST (e.g., "42", "true").
 /// </summary>
 public class LiteralExpression : AstNode {
+
     /// <summary>
     /// The literal value of this node.
     /// </summary>
-    public object Value { get; }
+    override public sealed object? Value { get; set; }
+
 
     /// <summary>
     /// Initializes a new instance of the <see cref="LiteralExpression"/> class.
@@ -22,5 +24,5 @@ public class LiteralExpression : AstNode {
     /// Evaluates the literal expression.
     /// </summary>
     /// <returns>The literal value.</returns>
-    override public object Evaluate() => Value;
+    override public object? Evaluate() => Value;
 }

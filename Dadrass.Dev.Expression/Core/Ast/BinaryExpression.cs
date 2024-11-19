@@ -20,7 +20,7 @@ public class BinaryExpression : AstNode {
     /// The operator token (e.g., &&, >, +) for the binary expression.
     /// </summary>
     public TokenModel Operator { get; }
-
+    
     /// <summary>
     /// Initializes a new instance of the <see cref="BinaryExpression"/> class.
     /// </summary>
@@ -38,35 +38,26 @@ public class BinaryExpression : AstNode {
     /// Evaluates the binary expression.
     /// </summary>
     /// <returns>The result of evaluating the binary expression.</returns>
-    override public object Evaluate()
+    override public object? Evaluate()
     {
         // Evaluate both sides of the expression
         var leftValue = Left.Evaluate();
         var rightValue = Right.Evaluate();
 
         // Handle logical operators (e.g., &&, ||)
-        if (Operator.LogicalType.HasValue)
+        if (Operator.TokenType.HasValue)
         {
-            return Operator.LogicalType switch
+            return Operator switch
             {
-                LogicalTokenType.And => (bool)leftValue && (bool)rightValue,
-                LogicalTokenType.Or => (bool)leftValue || (bool)rightValue,
-                _ => throw new Exception($"Unsupported logical operator: {Operator.LogicalType}")
-            };
-        }
-
-        // Handle comparison operators (e.g., ==, >)
-        if (Operator.ComparisonType.HasValue)
-        {
-            return Operator.ComparisonType switch
-            {
-                ComparisonTokenType.EqualEqual => Equals(leftValue, rightValue),
-                ComparisonTokenType.NotEqual => !Equals(leftValue, rightValue),
-                ComparisonTokenType.Less => (dynamic)leftValue < (dynamic)rightValue,
-                ComparisonTokenType.LessEqual => (dynamic)leftValue <= (dynamic)rightValue,
-                ComparisonTokenType.Greater => (dynamic)leftValue > (dynamic)rightValue,
-                ComparisonTokenType.GreaterEqual => (dynamic)leftValue >= (dynamic)rightValue,
-                _ => throw new Exception($"Unsupported comparison operator: {Operator.ComparisonType}")
+                { TokenType: TokenType.And } => (bool)leftValue! && (bool)rightValue!,
+                { TokenType: TokenType.Or } => (bool)leftValue! || (bool)rightValue!,
+                { TokenType: TokenType.EqualEqual } => Equals(leftValue, rightValue),
+                { TokenType: TokenType.NotEqual } => !Equals(leftValue, rightValue),
+                { TokenType: TokenType.Less } => (dynamic)leftValue! < (dynamic)rightValue!,
+                { TokenType: TokenType.LessEqual } => (dynamic)leftValue! <= (dynamic)rightValue!,
+                { TokenType: TokenType.Greater } => (dynamic)leftValue! > (dynamic)rightValue!,
+                { TokenType: TokenType.GreaterEqual } => (dynamic)leftValue! >= (dynamic)rightValue!,
+                _ => throw new Exception($"Unsupported comparison operator: {Operator.TokenType}")
             };
         }
 

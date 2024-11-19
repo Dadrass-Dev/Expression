@@ -7,27 +7,12 @@ public class TokenModel {
     /// <summary>
     /// Gets or sets the arithmetic operator type of the token.
     /// </summary>
-    public ArithmeticTokenType? ArithmeticType { get; set; }
+    public TokenType? TokenType { get; set; }
 
     /// <summary>
-    /// Gets or sets the logical operator type of the token.
+    /// Gets the list of child tokens.
     /// </summary>
-    public LogicalTokenType? LogicalType { get; set; }
-
-    /// <summary>
-    /// Gets or sets the comparison operator type of the token.
-    /// </summary>
-    public ComparisonTokenType? ComparisonType { get; set; }
-
-    /// <summary>
-    /// Gets or sets the literal value associated with the token.
-    /// </summary>
-    public LiteralTokenType? LiteralType { get; set; }
-
-    /// <summary>
-    /// Gets or sets other token types like identifier or parentheses.
-    /// </summary>
-    public OtherTokenType? OtherType { get; set; }
+    public List<TokenModel> Tokens { get; set; } = [];
 
     /// <summary>
     /// Gets or sets the actual value (literal) of the token.
@@ -37,30 +22,12 @@ public class TokenModel {
     /// <summary>
     /// Initializes a new instance of the <see cref="TokenModel"/> class.
     /// </summary>
-    public TokenModel(object type, object? literal)
+    public TokenModel(TokenType type, object? literal, List<TokenModel>? tokens = null)
     {
         Literal = literal;
+        if (literal != null)
+            Tokens = tokens!;
 
-        switch (type)
-        {
-            // Assign types based on the type of the object passed
-            case ArithmeticTokenType arithmeticType:
-                ArithmeticType = arithmeticType;
-                break;
-            case LogicalTokenType logicalType:
-                LogicalType = logicalType;
-                break;
-            case ComparisonTokenType comparisonType:
-                ComparisonType = comparisonType;
-                break;
-            case LiteralTokenType literalType:
-                LiteralType = literalType;
-                break;
-            case OtherTokenType otherType:
-                OtherType = otherType;
-                break;
-            default:
-                throw new Exception("Unsupported token type.");
-        }
+        TokenType = type;
     }
 }

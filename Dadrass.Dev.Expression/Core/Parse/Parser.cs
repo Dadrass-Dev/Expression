@@ -33,11 +33,11 @@ public class Parser {
     /// <summary>
     /// Parses logical OR expressions.
     /// </summary>
-    AstNode ParseLogicalOr()
+    protected AstNode ParseLogicalOr()
     {
         var node = ParseLogicalAnd();
 
-        while (Match(LogicalTokenType.Or))
+        while (Match(TokenType.Or))
         {
             var op = Previous();
             var right = ParseLogicalAnd();
@@ -50,11 +50,11 @@ public class Parser {
     /// <summary>
     /// Parses logical AND expressions.
     /// </summary>
-    AstNode ParseLogicalAnd()
+    protected AstNode ParseLogicalAnd()
     {
         var node = ParseEquality();
 
-        while (Match(LogicalTokenType.And))
+        while (Match(TokenType.And))
         {
             var op = Previous();
             var right = ParseEquality();
@@ -67,11 +67,11 @@ public class Parser {
     /// <summary>
     /// Parses equality expressions (e.g., "==" and "!=").
     /// </summary>
-    AstNode ParseEquality()
+    protected AstNode ParseEquality()
     {
         var node = ParseComparison();
 
-        while (Match(ComparisonTokenType.EqualEqual, ComparisonTokenType.NotEqual))
+        while (Match(TokenType.EqualEqual, TokenType.NotEqual))
         {
             var op = Previous();
             var right = ParseComparison();
@@ -84,11 +84,11 @@ public class Parser {
     /// <summary>
     /// Parses comparison expressions (e.g., "&lt;", "&gt;=", etc.).
     /// </summary>
-    AstNode ParseComparison()
+    protected AstNode ParseComparison()
     {
         var node = ParsePrimary();
 
-        while (Match(ComparisonTokenType.Less, ComparisonTokenType.LessEqual, ComparisonTokenType.Greater, ComparisonTokenType.GreaterEqual))
+        while (Match(TokenType.Less, TokenType.LessEqual, TokenType.Greater, TokenType.GreaterEqual))
         {
             var op = Previous();
             var right = ParsePrimary();
@@ -101,26 +101,42 @@ public class Parser {
     /// <summary>
     /// Parses primary expressions, such as literals or identifiers.
     /// </summary>
-    AstNode ParsePrimary()
+    protected AstNode ParsePrimary()
     {
-        if (Match(LiteralTokenType.Number, LiteralTokenType.String, LiteralTokenType.DateTime, LiteralTokenType.True, LiteralTokenType.False))
+        if (Match(TokenType.Number, TokenType.String, TokenType.DateTime, TokenType.True, TokenType.False))
         {
             return new LiteralExpression(Previous().Literal!);
         }
 
-        if (Match(OtherTokenType.Identifier))
+        if (Match(TokenType.Identifier))
         {
             return new IdentifierExpression(Previous().Literal!.ToString()!, ResolveIdentifier);
         }
 
-        if (Match(OtherTokenType.LeftParen))
+        if (Match(TokenType.Function))
         {
-            var expr = ParseExpression();
-            Consume(OtherTokenType.RightParen, "Expect ')' after expression.");
-            return expr;
+            return ResolveFunction();
         }
 
-        throw new Exception("Invalid expression.");
+        var expr = ParseExpression();
+        Consume(TokenType.RightParen, "Expect ')' after expression.");
+        return expr;
+    }
+
+
+    protected AstNode ResolveFunction()
+    {
+        var arguments = SplitListByDelimiter(Previous().Tokens).Select(s => {
+            var parser = new Parser(s, _parameters);
+            return parser.ParseExpression();
+        }).ToArray();
+
+        return new FunctionExpression(Previous().Literal!.ToString()!, arguments, ExpressionUtilities.ResolveFunction);
+    }
+
+    protected object? ResolveIdentifier(string identifier)
+    {
+        return _parameters.GetValueOrDefault(identifier);
     }
 
     /// <summary>
@@ -129,7 +145,7 @@ public class Parser {
     /// </summary>
     /// <param name="types">The types to match.</param>
     /// <returns><see langword="true"/> if a match is found; otherwise, <see langword="false"/>.</returns>
-    bool Match(params object[] types)
+    protected bool Match(params object[] types)
     {
         if (!types.Any(Check))
             return false;
@@ -142,47 +158,24 @@ public class Parser {
     /// </summary>
     /// <param name="type">The type to check.</param>
     /// <returns><see langword="true"/> if the token matches the type; otherwise, <see langword="false"/>.</returns>
-    bool Check(object type)
+    protected bool Check(object type)
     {
         if (IsAtEnd()) return false;
 
         var currentToken = Peek();
         return type switch
         {
-            LogicalTokenType logical => currentToken.LogicalType == logical,
-            ComparisonTokenType comparison => currentToken.ComparisonType == comparison,
-            LiteralTokenType literal => currentToken.LiteralType == literal,
-            OtherTokenType other => currentToken.OtherType == other,
+            TokenType tokenType => currentToken.TokenType == tokenType,
             _ => false
         };
     }
 
-    /// <summary>
-    /// Parses function calls (e.g., IIF, COALESCE).
-    /// </summary>
-    object? ParseFunctionCall(string functionName)
-    {
-        Consume(OtherTokenType.LeftParen, "Expected '(' after function name.");
-
-        List<object> arguments = [];
-
-        if (!Check(OtherTokenType.RightParen))
-        {
-            do
-            {
-                arguments.Add(ParseExpression());
-            } while (Match(OtherTokenType.Comma));
-        }
-
-        Consume(OtherTokenType.RightParen, "Expected ')' after function arguments.");
-        return ExpressionUtilities.ResolveFunction(functionName, arguments.ToArray());
-    }
 
     /// <summary>
     /// Advances to the next token in the list.
     /// </summary>
     /// <returns>The current token before advancing.</returns>
-    void Advance()
+    protected void Advance()
     {
         if (!IsAtEnd()) _current++;
         Previous();
@@ -192,19 +185,19 @@ public class Parser {
     /// Checks if the parser has reached the end of the token list.
     /// </summary>
     /// <returns><see langword="true"/> if at the end of the token list; otherwise, <see langword="false"/>.</returns>
-    bool IsAtEnd() => Peek().OtherType == OtherTokenType.Eof;
+    protected bool IsAtEnd() => Peek().TokenType == TokenType.Eof;
 
     /// <summary>
     /// Gets the current token without advancing.
     /// </summary>
     /// <returns>The current token.</returns>
-    TokenModel Peek() => _tokens[_current];
+    protected TokenModel Peek() => _tokens[_current];
 
     /// <summary>
     /// Gets the previous token (the last token the parser advanced from).
     /// </summary>
     /// <returns>The previous token.</returns>
-    TokenModel Previous() => _tokens[_current - 1];
+    protected TokenModel Previous() => _tokens[_current - 1];
 
     /// <summary>
     /// Consumes the current token if it matches the given type; otherwise, throws an exception.
@@ -212,7 +205,7 @@ public class Parser {
     /// <param name="type">The expected token type.</param>
     /// <param name="message">The error message if the token does not match.</param>
     /// <returns>The consumed token.</returns>
-    void Consume(object type, string message)
+    protected void Consume(object type, string message)
     {
         if (!Check(type))
         {
@@ -221,15 +214,35 @@ public class Parser {
         Advance();
     }
 
-    /// <summary>
-    /// Resolves the value of an identifier by its name.
-    /// </summary>
-    /// <param name="name">The name of the identifier.</param>
-    /// <returns>The resolved value of the identifier.</returns>
-    object ResolveIdentifier(string name)
+
+    static List<List<TokenModel>> SplitListByDelimiter(List<TokenModel> list)
     {
-        // This method should be implemented to resolve identifiers in your context.
-        // For example, map "DateTime.Now" to its actual value.
-        return ParseFunctionCall(name) ?? _parameters[name];
+        var result = new List<List<TokenModel>>();
+        var current = new List<TokenModel>();
+
+        foreach (var item in list)
+        {
+            if (item.TokenType == TokenType.Comma)
+            {
+                if (current.Count <= 0)
+                {
+                    continue;
+                }
+                result.Add([..current]);// Add the current group
+                current.Clear();// Start a new group
+            }
+            else
+            {
+                current.Add(item);
+            }
+        }
+
+        // Add the last group if it exists
+        if (current.Count > 0)
+        {
+            result.Add(current);
+        }
+
+        return result;
     }
 }
