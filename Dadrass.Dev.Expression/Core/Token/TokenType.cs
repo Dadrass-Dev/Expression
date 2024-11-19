@@ -49,7 +49,7 @@ enum TokenType {
     /// <summary>Represents a dateTime literal (e.g., "2024-11-17 10:30:45").</summary>
     DateTime,
 
-    /// <summary>Represents the "&&" operator.</summary>
+    /// <summary>Represents the "&amp;&amp;" operator.</summary>
     And,
 
     /// <summary>Represents the "||" operator.</summary>

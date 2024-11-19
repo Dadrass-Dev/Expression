@@ -5,6 +5,9 @@ namespace Dadrass.Dev.Expression.Core.Utilities;
 /// </summary>
 public static class ExpressionUtilities {
 
+    /// <summary>
+    /// Function registry for custom functions
+    /// </summary>
     public readonly static Dictionary<string, Func<object?[]?, object>> CustomFunctionRegistry = [];
 
     /// <summary>

@@ -24,6 +24,14 @@
         <PackageTags>Dynamic expressions</PackageTags>
         <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+      <DocumentationFile>bin\Debug\net8.0\Dadrass.Dev.Expression.xml</DocumentationFile>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+      <DocumentationFile>bin\Release\net8.0\Dadrass.Dev.Expression.xml</DocumentationFile>
+    </PropertyGroup>
     <ItemGroup>
         <None Include="../README.md" Pack="true" PackagePath=""/>
         <None Include="../LICENSE" Pack="true" PackagePath=""/>

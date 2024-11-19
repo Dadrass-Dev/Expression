@@ -3,7 +3,7 @@ namespace Dadrass.Dev.Expression.Core.Ast;
 using Token;
 
 /// <summary>
-/// Represents a binary expression node (e.g., "a && b" or "x > y").
+/// Represents a binary expression node (e.g., "a &amp;&amp; b" or "x > y").
 /// </summary>
 class BinaryExpression : AstNode {
     /// <summary>
@@ -17,7 +17,7 @@ class BinaryExpression : AstNode {
     public AstNode Right { get; }
 
     /// <summary>
-    /// The operator token (e.g., &&, >, +) for the binary expression.
+    /// The operator token (e.g., &amp;&amp;, >, +) for the binary expression.
     /// </summary>
     public TokenModel Operator { get; }
 
